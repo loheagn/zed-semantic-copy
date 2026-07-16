@@ -1,0 +1,15 @@
+[
+  {
+    "label": "zed-semantic-copy: copy selection",
+    "command": "/absolute/path/to/zed-semantic-copy",
+    "args": [],
+    "use_new_terminal": false,
+    "allow_concurrent_runs": false,
+    "reveal": "never",
+    "hide": "on_success",
+    "shell": "system",
+    "show_summary": false,
+    "show_command": false,
+    "save": "none"
+  }
+]

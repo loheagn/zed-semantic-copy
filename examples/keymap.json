@@ -1,0 +1,20 @@
+[
+  {
+    "context": "Editor && VimControl && !VimWaiting && !menu",
+    "bindings": {
+      "space y s": [
+        "task::Spawn",
+        { "task_name": "zed-semantic-copy: copy selection" }
+      ]
+    }
+  },
+  {
+    "context": "Editor && !menu",
+    "bindings": {
+      "cmd-shift-c": [
+        "task::Spawn",
+        { "task_name": "zed-semantic-copy: copy selection" }
+      ]
+    }
+  }
+]
