@@ -5,6 +5,7 @@ use std::{
 };
 
 use anyhow::{Context as _, Result, bail};
+use serde::Deserialize;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CopyContext {
@@ -16,6 +17,7 @@ pub struct CopyContext {
     pub absolute_path: Option<PathBuf>,
     pub language: Option<String>,
     pub outline_symbol: Option<String>,
+    pub document_text: Option<String>,
 }
 
 impl CopyContext {
@@ -25,9 +27,6 @@ impl CopyContext {
 
     pub fn from_lookup(mut lookup: impl FnMut(&str) -> Option<OsString>) -> Result<Self> {
         let selected_text = required_utf8(&mut lookup, "ZED_SELECTED_TEXT")?;
-        if selected_text.trim().is_empty() {
-            bail!("the Zed selection is empty or contains only whitespace");
-        }
 
         let start_line = parse_one_based(&required_utf8(&mut lookup, "ZED_ROW")?, "ZED_ROW")?;
         let start_column = optional_utf8(&mut lookup, "ZED_COLUMN")
@@ -54,7 +53,7 @@ impl CopyContext {
             })
             .context("ZED_FILENAME and a usable relative filename are both missing")?;
 
-        Ok(Self {
+        let context = Self {
             selected_text,
             start_line,
             start_column,
@@ -63,8 +62,66 @@ impl CopyContext {
             absolute_path,
             language: optional_utf8(&mut lookup, "ZED_LANGUAGE"),
             outline_symbol: optional_utf8(&mut lookup, "ZED_SYMBOL"),
-        })
+            document_text: None,
+        };
+        context.validate("Zed")?;
+        Ok(context)
     }
+
+    pub fn from_json_reader(reader: impl std::io::Read) -> Result<Self> {
+        let payload: JsonCopyContext = serde_json::from_reader(reader)
+            .context("failed to read copy context JSON from stdin")?;
+        let context = Self {
+            selected_text: payload.selected_text,
+            start_line: payload.start_line,
+            start_column: payload.start_column,
+            filename: payload.filename,
+            relative_path: payload.relative_path,
+            absolute_path: payload.absolute_path,
+            language: payload.language,
+            outline_symbol: payload.outline_symbol,
+            document_text: payload.document_text,
+        };
+        context.validate("editor")?;
+        Ok(context)
+    }
+
+    fn validate(&self, source: &str) -> Result<()> {
+        if self.selected_text.trim().is_empty() {
+            bail!("the {source} selection is empty or contains only whitespace");
+        }
+        if self.start_line == 0 {
+            bail!("start_line must be one-based, got 0");
+        }
+        if self.start_column == 0 {
+            bail!("start_column must be one-based, got 0");
+        }
+        if self.filename.is_empty() {
+            bail!("filename must not be empty");
+        }
+        if self.relative_path.is_empty() {
+            bail!("relative_path must not be empty");
+        }
+        Ok(())
+    }
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct JsonCopyContext {
+    selected_text: String,
+    start_line: usize,
+    start_column: usize,
+    filename: String,
+    relative_path: String,
+    #[serde(default)]
+    absolute_path: Option<PathBuf>,
+    #[serde(default)]
+    language: Option<String>,
+    #[serde(default)]
+    outline_symbol: Option<String>,
+    #[serde(default)]
+    document_text: Option<String>,
 }
 
 fn required_utf8(lookup: &mut impl FnMut(&str) -> Option<OsString>, key: &str) -> Result<String> {
@@ -146,5 +203,51 @@ mod tests {
             ])
             .is_err()
         );
+    }
+
+    #[test]
+    fn reads_editor_context_from_json() {
+        let input = br#"{
+            "selected_text": "Run",
+            "start_line": 12,
+            "start_column": 7,
+            "filename": "main.go",
+            "relative_path": "cmd/main.go",
+            "absolute_path": "/repo/cmd/main.go",
+            "language": "go",
+            "document_text": "package main\n"
+        }"#;
+
+        let context = CopyContext::from_json_reader(input.as_slice()).unwrap();
+
+        assert_eq!(context.selected_text, "Run");
+        assert_eq!(context.start_line, 12);
+        assert_eq!(context.start_column, 7);
+        assert_eq!(
+            context.absolute_path,
+            Some(PathBuf::from("/repo/cmd/main.go"))
+        );
+        assert_eq!(context.document_text.as_deref(), Some("package main\n"));
+    }
+
+    #[test]
+    fn rejects_invalid_editor_context_json() {
+        let empty_selection = br#"{
+            "selected_text": " ",
+            "start_line": 1,
+            "start_column": 1,
+            "filename": "main.go",
+            "relative_path": "main.go"
+        }"#;
+        assert!(CopyContext::from_json_reader(empty_selection.as_slice()).is_err());
+
+        let zero_column = br#"{
+            "selected_text": "x",
+            "start_line": 1,
+            "start_column": 0,
+            "filename": "main.go",
+            "relative_path": "main.go"
+        }"#;
+        assert!(CopyContext::from_json_reader(zero_column.as_slice()).is_err());
     }
 }

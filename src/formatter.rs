@@ -130,6 +130,7 @@ mod tests {
             absolute_path: Some(PathBuf::from("/repo/cmd/main.go")),
             language: Some("Go".to_owned()),
             outline_symbol: None,
+            document_text: None,
         }
     }
 

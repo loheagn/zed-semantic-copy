@@ -1,4 +1,4 @@
-use std::fs;
+use std::{borrow::Cow, fs};
 
 use tree_sitter::{Node, Parser};
 
@@ -9,8 +9,10 @@ pub fn classify(context: &CopyContext) -> Option<SymbolKind> {
         return None;
     }
 
-    let path = context.absolute_path.as_deref()?;
-    let source = fs::read(path).ok()?;
+    let source = match context.document_text.as_ref() {
+        Some(document_text) => Cow::Borrowed(document_text.as_bytes()),
+        None => Cow::Owned(fs::read(context.absolute_path.as_deref()?).ok()?),
+    };
     let start = byte_offset(&source, context.start_line, context.start_column)?;
     let end = start.checked_add(context.selected_text.len())?;
     if source.get(start..end)? != context.selected_text.as_bytes() {
@@ -181,6 +183,7 @@ func main() {
             absolute_path: Some(path),
             language: Some("Go".to_owned()),
             outline_symbol: None,
+            document_text: None,
         };
         classify(&context)
     }
@@ -235,6 +238,7 @@ func main() {
             absolute_path: Some(path),
             language: Some("Go".to_owned()),
             outline_symbol: None,
+            document_text: None,
         };
         assert_eq!(classify(&context), None);
     }
@@ -256,7 +260,25 @@ func main() {
             absolute_path: Some(path),
             language: Some("Go".to_owned()),
             outline_symbol: None,
+            document_text: Some(source.to_owned()),
         };
+        assert_eq!(classify(&context), Some(SymbolKind::Function));
+    }
+
+    #[test]
+    fn classifies_unsaved_document_text_without_a_file() {
+        let context = CopyContext {
+            selected_text: "helper".to_owned(),
+            start_line: 3,
+            start_column: 6,
+            filename: "main.go".to_owned(),
+            relative_path: "main.go".to_owned(),
+            absolute_path: None,
+            language: Some("go".to_owned()),
+            outline_symbol: None,
+            document_text: Some("package main\nfunc main() {}\nfunc helper() {}\n".to_owned()),
+        };
+
         assert_eq!(classify(&context), Some(SymbolKind::Function));
     }
 

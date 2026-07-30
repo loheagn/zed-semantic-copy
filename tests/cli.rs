@@ -40,6 +40,41 @@ fn missing_selection_fails_without_touching_clipboard() {
 }
 
 #[test]
+fn stdout_mode_accepts_editor_context_json() {
+    let mut child = Command::new(binary())
+        .args(["copy", "--stdout", "--stdin-json"])
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .spawn()
+        .unwrap();
+    use std::io::Write as _;
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(
+            br#"{
+                "selected_text": "Run",
+                "start_line": 2,
+                "start_column": 6,
+                "filename": "main.go",
+                "relative_path": "cmd/main.go",
+                "language": "go",
+                "document_text": "package main\nfunc Run() {}\n"
+            }"#,
+        )
+        .unwrap();
+
+    let output = child.wait_with_output().unwrap();
+
+    assert!(output.status.success());
+    assert_eq!(
+        String::from_utf8(output.stdout).unwrap(),
+        "[main.go](cmd/main.go) 中的 function Run\n"
+    );
+}
+
+#[test]
 fn install_dry_run_is_side_effect_free() {
     let directory = tempfile::tempdir().unwrap();
     let config_dir = directory.path().join("config");

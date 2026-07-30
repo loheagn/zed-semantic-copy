@@ -14,7 +14,7 @@ use zed_semantic_copy::{
 #[command(
     name = "zed-semantic-copy",
     version,
-    about = "Copy a Zed selection as a semantic Markdown reference"
+    about = "Copy an editor selection as a semantic Markdown reference"
 )]
 struct Cli {
     #[command(subcommand)]
@@ -28,6 +28,9 @@ enum CliCommand {
         /// Print the formatted reference instead of changing the clipboard.
         #[arg(long)]
         stdout: bool,
+        /// Read an editor-neutral copy context as JSON from stdin.
+        #[arg(long)]
+        stdin_json: bool,
     },
     /// Install the helper plus managed Zed task and keymap entries.
     Install {
@@ -63,9 +66,16 @@ enum CliCommand {
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
-    match cli.command.unwrap_or(CliCommand::Copy { stdout: false }) {
-        CliCommand::Copy { stdout } => {
-            let context = CopyContext::from_environment()?;
+    match cli.command.unwrap_or(CliCommand::Copy {
+        stdout: false,
+        stdin_json: false,
+    }) {
+        CliCommand::Copy { stdout, stdin_json } => {
+            let context = if stdin_json {
+                CopyContext::from_json_reader(std::io::stdin().lock())?
+            } else {
+                CopyContext::from_environment()?
+            };
             if stdout {
                 println!("{}", format_selection(&context));
             } else {

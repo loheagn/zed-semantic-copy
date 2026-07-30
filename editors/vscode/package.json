@@ -1,0 +1,71 @@
+{
+  "name": "semantic-copy",
+  "displayName": "Semantic Copy",
+  "description": "Copy a code selection as a semantic Markdown reference.",
+  "version": "0.1.0",
+  "publisher": "zed-semantic-copy",
+  "license": "UNLICENSED",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "copy",
+    "markdown",
+    "reference",
+    "codex"
+  ],
+  "activationEvents": [
+    "onCommand:semanticCopy.copySelection"
+  ],
+  "main": "./src/extension.js",
+  "extensionKind": [
+    "workspace"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true
+    },
+    "virtualWorkspaces": {
+      "supported": true
+    }
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "semanticCopy.copySelection",
+        "title": "Semantic Copy: Copy Selection as Reference",
+        "shortTitle": "Copy Semantic Reference",
+        "icon": "$(references)"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "semanticCopy.copySelection",
+        "key": "ctrl+shift+c",
+        "mac": "shift+cmd+c",
+        "when": "editorTextFocus && editorHasSelection"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "semanticCopy.copySelection",
+          "when": "editorHasSelection",
+          "group": "9_cutcopypaste@20"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "build:binary": "node ./scripts/build-binary.js",
+    "check": "node --check ./src/context.js && node --check ./src/extension.js",
+    "test": "node --test ./test/*.test.js",
+    "package": "npm run check && npm test && npm run build:binary && vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@vscode/vsce": "^3.9.2"
+  }
+}

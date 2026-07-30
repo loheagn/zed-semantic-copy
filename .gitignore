@@ -1,2 +1,5 @@
 /target/
 .DS_Store
+/editors/vscode/bin/
+/editors/vscode/node_modules/
+/editors/vscode/*.vsix

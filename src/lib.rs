@@ -8,7 +8,7 @@ use anyhow::Result;
 
 use crate::{clipboard::ClipboardSink, context::CopyContext, formatter::format_selection};
 
-/// Formats the current Zed selection and writes it to the supplied clipboard.
+/// Formats the current editor selection and writes it to the supplied clipboard.
 ///
 /// Returning the formatted value keeps the orchestration testable without
 /// reading the real system clipboard.
@@ -47,6 +47,7 @@ mod tests {
             absolute_path: Some(PathBuf::from("/repo/docs/main.txt")),
             language: Some("Plain Text".to_owned()),
             outline_symbol: None,
+            document_text: None,
         };
         let mut clipboard = FakeClipboard::default();
 
