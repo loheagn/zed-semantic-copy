@@ -1,0 +1,48 @@
+.gitignore
+  h_a6ec7f2b040e6b 3-5
+Cargo.lock
+  h_a6ec7f2b040e6b 314,456
+Cargo.toml
+  h_a6ec7f2b040e6b 6,11
+README.md
+  h_a6ec7f2b040e6b 1,3,11-15,21,53-71,74-79,86,90,96-97,103-104,115-120,136-139
+editors/vscode/.vscodeignore
+  h_a6ec7f2b040e6b 1-5
+editors/vscode/README.md
+  h_a6ec7f2b040e6b 1-24
+editors/vscode/package-lock.json
+  h_a6ec7f2b040e6b 1-3811
+editors/vscode/package.json
+  h_a6ec7f2b040e6b 1-71
+editors/vscode/scripts/build-binary.js
+  h_a6ec7f2b040e6b 1-33
+editors/vscode/src/context.js
+  h_a6ec7f2b040e6b 1-45
+editors/vscode/src/extension.js
+  h_a6ec7f2b040e6b 1-87
+editors/vscode/test/context.test.js
+  h_a6ec7f2b040e6b 1-56
+src/context.rs
+  h_a6ec7f2b040e6b 8,20,56,65-105,109-126,207-252
+src/formatter.rs
+  h_a6ec7f2b040e6b 133
+src/go_semantics.rs
+  h_a6ec7f2b040e6b 1,12-15,186,241,263,268-284
+src/lib.rs
+  h_a6ec7f2b040e6b 11,50
+src/main.rs
+  h_a6ec7f2b040e6b 17,31-33,69-78
+tests/cli.rs
+  h_a6ec7f2b040e6b 42-76
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "ac71130c340335818d1872d8f0c86c4dd7245675",
+  "prompts": {},
+  "humans": {
+    "h_a6ec7f2b040e6b": {
+      "author": "linan.loheagn3 <linan.loheagn3@bytedance.com>"
+    }
+  }
+}
