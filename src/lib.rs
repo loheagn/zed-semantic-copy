@@ -3,6 +3,8 @@ pub mod context;
 pub mod formatter;
 pub mod go_semantics;
 pub mod install;
+pub mod python_semantics;
+mod semantics;
 
 use anyhow::Result;
 

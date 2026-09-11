@@ -1,11 +1,12 @@
 use std::fmt;
 
-use crate::{context::CopyContext, go_semantics};
+use crate::{context::CopyContext, go_semantics, python_semantics};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SymbolKind {
     Function,
     Method,
+    Class,
     Struct,
     Interface,
     Type,
@@ -20,6 +21,7 @@ impl fmt::Display for SymbolKind {
         let name = match self {
             Self::Function => "function",
             Self::Method => "method",
+            Self::Class => "class",
             Self::Struct => "struct",
             Self::Interface => "interface",
             Self::Type => "type",
@@ -33,7 +35,7 @@ impl fmt::Display for SymbolKind {
 }
 
 pub fn format_selection(context: &CopyContext) -> String {
-    let kind = go_semantics::classify(context);
+    let kind = go_semantics::classify(context).or_else(|| python_semantics::classify(context));
     format_selection_with_kind(context, kind)
 }
 
