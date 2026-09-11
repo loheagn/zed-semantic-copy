@@ -1,35 +1,13 @@
-use std::{borrow::Cow, fs};
+use tree_sitter::Node;
 
-use tree_sitter::{Node, Parser};
-
-use crate::{context::CopyContext, formatter::SymbolKind};
+use crate::{context::CopyContext, formatter::SymbolKind, semantics::classify_selection};
 
 pub fn classify(context: &CopyContext) -> Option<SymbolKind> {
-    if !is_go_context(context) || context.selected_text.contains(['\n', '\r']) {
+    if !is_go_context(context) {
         return None;
     }
 
-    let source = match context.document_text.as_ref() {
-        Some(document_text) => Cow::Borrowed(document_text.as_bytes()),
-        None => Cow::Owned(fs::read(context.absolute_path.as_deref()?).ok()?),
-    };
-    let start = byte_offset(&source, context.start_line, context.start_column)?;
-    let end = start.checked_add(context.selected_text.len())?;
-    if source.get(start..end)? != context.selected_text.as_bytes() {
-        return None;
-    }
-
-    let mut parser = Parser::new();
-    let language = tree_sitter_go::LANGUAGE.into();
-    parser.set_language(&language).ok()?;
-    let tree = parser.parse(&source, None)?;
-    let root = tree.root_node();
-    let node = root.named_descendant_for_byte_range(start, end)?;
-    if node.start_byte() != start || node.end_byte() != end {
-        return None;
-    }
-
-    classify_node(node)
+    classify_selection(context, &tree_sitter_go::LANGUAGE.into(), classify_node)
 }
 
 fn is_go_context(context: &CopyContext) -> bool {
@@ -38,25 +16,6 @@ fn is_go_context(context: &CopyContext) -> bool {
         .as_deref()
         .is_some_and(|language| language.eq_ignore_ascii_case("go"))
         || context.relative_path.ends_with(".go")
-}
-
-fn byte_offset(source: &[u8], one_based_line: usize, one_based_column: usize) -> Option<usize> {
-    let mut line_start = 0;
-    for _ in 1..one_based_line {
-        let newline = source
-            .get(line_start..)?
-            .iter()
-            .position(|byte| *byte == b'\n')?;
-        line_start += newline + 1;
-    }
-
-    let offset = line_start.checked_add(one_based_column.checked_sub(1)?)?;
-    let line_end = source
-        .get(line_start..)?
-        .iter()
-        .position(|byte| *byte == b'\n')
-        .map_or(source.len(), |newline| line_start + newline);
-    (offset <= line_end).then_some(offset)
 }
 
 fn classify_node(node: Node<'_>) -> Option<SymbolKind> {
@@ -122,7 +81,7 @@ fn is_field(parent: Node<'_>, child: Node<'_>, expected: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
+    use std::fs;
 
     use tempfile::tempdir;
 
@@ -280,13 +239,5 @@ func main() {
         };
 
         assert_eq!(classify(&context), Some(SymbolKind::Function));
-    }
-
-    #[test]
-    fn byte_offset_rejects_out_of_bounds_positions() {
-        assert_eq!(byte_offset(b"a\nb", 3, 1), None);
-        assert_eq!(byte_offset(b"a\nb", 1, 3), None);
-        assert_eq!(byte_offset(b"a\nb", 2, 2), Some(3));
-        assert!(!Path::new("main.go").is_absolute());
     }
 }
